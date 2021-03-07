@@ -1,18 +1,19 @@
 package error
 
-import (
-	"encoding/json"
-	"errors"
-)
+import "fmt"
 
 type UnauthorizedError struct {
 	status    int
 	errorCode string
 	codeType  string
-	details   interface{}
+	details   error
 }
 
-func NewUnauthorizedError(errorCode string, data interface{}) error {
+func (this *UnauthorizedError) Error() string {
+	return fmt.Sprintf("status: %d, errorCode: %v, codeType: %v, details: %v\n", this.status, this.errorCode, this.codeType, this.details)
+}
+
+func NewUnauthorizedError(errorCode string, data error) error {
 	err := &UnauthorizedError{
 		status:    400,
 		errorCode: errorCode,
@@ -20,6 +21,6 @@ func NewUnauthorizedError(errorCode string, data interface{}) error {
 		details:   data,
 	}
 
-	jErr, _ := json.Marshal(err)
-	return errors.New(string(jErr))
+	fmt.Printf("[Error] %v", err.Error())
+	return err
 }

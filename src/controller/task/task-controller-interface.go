@@ -1,5 +1,10 @@
 package task
 
+import (
+	"gtodo/src"
+	"gtodo/src/schema"
+)
+
 type ITaskController interface {
-	Create(contect interface{}) (interface{}, error)
+	AddTaskByOwner(context src.IContextService, data *schema.AddTaskRequest) (*schema.AddTaskResponse, error)
 }

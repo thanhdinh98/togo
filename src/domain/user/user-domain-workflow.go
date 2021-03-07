@@ -1,17 +1,47 @@
 package user
 
 import (
+	"gtodo/src"
 	"gtodo/src/entity/user"
-	useRepo "gtodo/src/infra/repository/user"
+	gErrors "gtodo/src/infra/error"
+	userRepo "gtodo/src/infra/repository/user"
+	"gtodo/src/infra/service"
 	"gtodo/src/schema"
 )
 
 type UserWorkflow struct {
 	repository user.IUserRepository
+	jwtService src.IJWTService
 }
 
 func (this *UserWorkflow) Login(data *schema.LoginRequest) (*schema.LoginResponse, error) {
-	return nil, nil
+	result, err := this.repository.FindOne(&user.User{
+		ID:       data.UserId,
+		Password: data.Password,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Dump token for simple demo app (Real appliaction would store permission in database)
+	permissions := []string{}
+
+	if result.ID == "firstUser" {
+		permissions = append(permissions, "task.create")
+	}
+
+	token, err := this.jwtService.CreateToken(&src.TokenData{
+		UserId:      result.ID,
+		Permissions: permissions,
+	})
+	if err != nil {
+		return nil, gErrors.NewInternalServerError(src.CREATE_TOKEN_FAIL, err)
+	}
+
+	return &schema.LoginResponse{
+		UserId: result.ID,
+		Token:  token,
+	}, nil
 }
 
 func (this *UserWorkflow) Register(data *schema.RegisterRequest) (*schema.RegisterResponse, error) {
@@ -28,6 +58,7 @@ func (this *UserWorkflow) DeleteTaskByOwner(data *schema.DeleteTaskByOwnerReques
 
 func NewUserWorkflow() IUserWorkflow {
 	return &UserWorkflow{
-		useRepo.NewUserRepository(),
+		userRepo.NewUserRepository(),
+		service.NewJWTService(),
 	}
 }

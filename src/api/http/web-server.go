@@ -3,7 +3,9 @@ package http
 import (
 	"gtodo/src"
 	v1 "gtodo/src/api/http/v1"
+	"net/http"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 )
 
@@ -11,8 +13,22 @@ type WebServer struct {
 	frameWork *echo.Echo
 }
 
+type CustomValidator struct {
+	validator *validator.Validate
+}
+
+func (cv *CustomValidator) Validate(i interface{}) error {
+	if err := cv.validator.Struct(i); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	return nil
+}
+
 func (ws *WebServer) LoadRouterV1() src.IWebServer {
-	var routerV1 *v1.RouterV1 = v1.NewRouterV1(ws.frameWork)
+	ws.frameWork.Validator = &CustomValidator{
+		validator: validator.New(),
+	}
+	routerV1 := v1.NewRouterV1(ws.frameWork)
 	routerV1.LoadAPI()
 	return ws
 }

@@ -3,8 +3,8 @@ package user
 import "gtodo/src/schema"
 
 type IUserController interface {
-	Login() (*schema.LoginResponse, error)
-	Register() (*schema.RegisterResponse, error)
-	CreateTaskByOwner() (*schema.CreateTaskByOwnerResponse, error)
-	DeleteTaskByOwner() (*schema.DeleteTaskByOwnerResponse, error)
+	Login(data *schema.LoginRequest) (*schema.LoginResponse, error)
+	Register(data *schema.RegisterRequest) (*schema.RegisterResponse, error)
+	CreateTaskByOwner(data *schema.CreateTaskByOwnerRequest) (*schema.CreateTaskByOwnerResponse, error)
+	DeleteTaskByOwner(data *schema.DeleteTaskByOwnerRequest) (*schema.DeleteTaskByOwnerResponse, error)
 }

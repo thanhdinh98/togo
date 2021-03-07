@@ -1,46 +1,87 @@
 package v1
 
 import (
-	"fmt"
+	"gtodo/src/controller/task"
+	"gtodo/src/controller/user"
 	"gtodo/src/schema"
 
 	"net/http"
+
+	gErrors "gtodo/src/infra/error"
+	"gtodo/src/infra/service"
 
 	"github.com/labstack/echo/v4"
 )
 
 type RouterV1 struct {
-	framework *echo.Echo
-	// taskController task.ITaskController
-	// userController user.IUserController
+	framework      *echo.Echo
+	taskController task.ITaskController
+	userController user.IUserController
 }
 
-func (r1 *RouterV1) LoadAPI() {
-	group := r1.framework.Group("/api")
+func (this *RouterV1) LoadAPI() {
+	group := this.framework.Group("/api")
 
-	group.POST("/register", func(c echo.Context) error {
-		request := new(schema.RegisterRequest)
+	group.POST("/login", func(c echo.Context) error {
+		request := new(schema.LoginRequest)
 
 		if err := c.Bind(request); err != nil {
-			c.JSON(http.StatusInternalServerError, err)
+			return c.JSON(http.StatusBadRequest, err.Error())
 		}
 
-		fmt.Printf("%v/n", request)
+		if err := c.Validate(request); err != nil {
+			return c.JSON(http.StatusBadRequest, err.Error())
+		}
 
-		// data, err := r1.userController.Register()
-		// if err != nil {
-		// 	r1.framework.Logger.Fatal(err)
-		// }
+		data, err := this.userController.Login(request)
+		if err != nil {
+			switch err.(type) {
+			case *gErrors.NotFoundError:
+				return c.JSON(http.StatusNotFound, err.Error())
+			default:
+				return c.JSON(http.StatusInternalServerError, err.Error())
+			}
+		}
 
-		return c.JSON(http.StatusOK, "Hello World")
+		return c.JSON(http.StatusOK, data)
 	})
 
+	group.POST("/tasks", func(c echo.Context) error {
+
+		context := service.NewServiceContext()
+		if err := context.LoadContext(c.Request().Header); err != nil {
+			return c.JSON(http.StatusBadRequest, err.Error())
+		}
+
+		request := new(schema.AddTaskRequest)
+		if err := c.Bind(request); err != nil {
+			return c.JSON(http.StatusBadRequest, err.Error())
+		}
+
+		if err := c.Validate(request); err != nil {
+			return c.JSON(http.StatusBadRequest, err.Error())
+		}
+
+		data, err := this.taskController.AddTaskByOwner(context, request)
+		if err != nil {
+			switch err.(type) {
+			case *gErrors.NotFoundError:
+				return c.JSON(http.StatusNotFound, err.Error())
+			case *gErrors.BadRequestError:
+				return c.JSON(http.StatusBadRequest, err.Error())
+			default:
+				return c.JSON(http.StatusInternalServerError, err.Error())
+			}
+		}
+
+		return c.JSON(http.StatusOK, data)
+	})
 }
 
 func NewRouterV1(framework *echo.Echo) *RouterV1 {
 	return &RouterV1{
-		framework: framework,
-		// taskController: task.NewTaskController(),
-		// userController: user.NewUserController(),
+		framework:      framework,
+		taskController: task.NewTaskController(),
+		userController: user.NewUserController(),
 	}
 }

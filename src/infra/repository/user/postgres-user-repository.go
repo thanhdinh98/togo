@@ -5,6 +5,8 @@ import (
 	"gtodo/src/entity/user"
 	"gtodo/src/infra/client"
 	gError "gtodo/src/infra/error"
+
+	"github.com/jinzhu/gorm"
 )
 
 type UserRepository struct {
@@ -39,7 +41,12 @@ func (this *UserRepository) FindOne(options interface{}) (*user.User, error) {
 	result := this.db.PConn.First(&user, options)
 
 	if result.Error != nil {
-		return nil, this.errorFactory.InternalServerError(src.FIND_ONE_USER_ERROR, result.Error)
+		switch result.Error {
+		case gorm.ErrRecordNotFound:
+			return nil, this.errorFactory.NotFoundError(src.USER_IS_NOT_EXISTED, result.Error)
+		default:
+			return nil, this.errorFactory.InternalServerError(src.FIND_ONE_USER_ERROR, result.Error)
+		}
 	}
 
 	return user, nil

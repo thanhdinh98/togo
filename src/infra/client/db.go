@@ -2,10 +2,10 @@ package client
 
 import (
 	"log"
-	"os"
 	"sync"
 
 	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
 type DB struct {
@@ -19,11 +19,10 @@ var (
 
 func NewDB() *DB {
 	once.Do(func() {
-		conn, err := gorm.Open(os.Getenv("DATABASE_URL"))
+		conn, err := gorm.Open("postgres", "user=postgres password=nopass dbname=gtodo sslmode=disable")
 		if err != nil {
 			log.Fatal(err)
 		}
-		defer conn.Close()
 
 		instance = &DB{
 			PConn: conn,
